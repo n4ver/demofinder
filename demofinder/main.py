@@ -94,9 +94,13 @@ def main():
         answer = input("Download these demos? (Y/N) : ")
         while answer.lower() not in ("y", "n"):
             answer = input("Download these demos? (Y/N) : ")
+        if answer.lower() != "y":
+            print("Exiting...")
+            return 0
         for i in download_demos:
             print(f"Downloading {i[1]}...")
             urlretrieve(i[0], i[1], show_progress)
+            return 1
         
     
     
