@@ -74,7 +74,7 @@ def get_user_log_profile():
 
 def menu():
     print("DEMOFINDER")
-    print("1) Get Demos from logs.tf URLs")
+    print("1) Get Demo from logs.tf URL")
     print("2) Get Demos from logs.tf profile")
 
 
@@ -109,12 +109,34 @@ def find_demos_from_logs(logs: dict, search: str, steamid64: int) -> list:
     return demos
 
 
+def find_demo_from_log(log: dict) -> list:
+    demos = []
+    players = [key for key in log["players"]]
+    steamid64 = steamid_to_64bit(players[0])
+    demos_api = rf"https://api.demos.tf/profiles/{steamid64}?after={log['info']['date']-5000}&before={log['info']['date']+5000}&map={log['info']['map']}"
+    demos_response = requests.get(demos_api)
+    demos += demos_response.json()
+    return demos
+
+
 def display_search_results(logs: dict, steamid64: int) -> None:
     print(f"Last {limit} logs for {steamid64}:")
     for i in range(limit):
         item = logs['logs'][i]
         print(rf"{i+1}: logs.tf/{item['id']}, {item['title']}, {item['map']}")
 
+
+def dump_logs(logs: dict) -> None:
+    file = open("search.json", "w")
+    json.dump(logs, file)
+
+
+def steamid_to_64bit(steamid: str) -> int:
+    steamid = steamid.strip('[').strip(']')
+
+    id_split = steamid.split(":")
+    steamid64 = (1 << 56) + (1 << 52) + (1 << 32) + int(id_split[2])
+    return steamid64
 
 
 def main() -> None:
@@ -123,18 +145,27 @@ def main() -> None:
     while user_choice not in ["1", "2"]:
         print("Invalid Option Chosen.")
         user_choice = input()
-    
-    if user_choice == "2":
-        logs_tf_url = get_user_log_profile()
 
-        steamid64 = extract_steamid(logs_tf_url)
+    if user_choice == "1":
+        logs_tf_url = input("Enter your logs.tf URL: ")
+        logs_api = rf"http://logs.tf/api/v1/log/{logs_tf_url}"
+
+        logs_response = requests.get(logs_api)
+        log = logs_response.json()
+        
+        dump_logs(log)
+
+        demos = find_demo_from_log(log)
+    
+    elif user_choice == "2":
+        logs_tf_profile_url = get_user_log_profile()
+
+        steamid64 = extract_steamid(logs_tf_profile_url)
         logs_api = rf"https://logs.tf/api/v1/log?player={steamid64}&limit={limit}"
 
         logs_response = requests.get(logs_api)
         logs = logs_response.json()
-
-        file = open("search.json", "w")
-        json.dump(logs, file)
+        dump_logs(logs)
 
         display_search_results(logs, steamid64)
 
@@ -144,10 +175,10 @@ def main() -> None:
         
         demos = find_demos_from_logs(logs, search, steamid64)
         
-        if not demos:
-            print("There is no demos.tf record for these logs.")
-        else:
-            download_demo_files(demos)
+    if not demos:
+        print("There is no demos.tf record for these logs.")
+    else:
+        download_demo_files(demos)
         
     
     
