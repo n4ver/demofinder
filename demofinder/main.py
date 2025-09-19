@@ -17,10 +17,10 @@ def verify_url(url, mode):
     url_dict = urlparse(url)
     if mode == 0:
         netloc = "logs.tf"
-        pattern = "/profile/7656[0-9]{13}\/?$"
+        pattern = "/profile/7656[0-9]{13}/?$"
     elif mode == 1:
         netloc = "demos.tf"
-        pattern = "/profiles/7656[0-9]{13}\/?$"
+        pattern = "/profiles/7656[0-9]{13}/?$"
     if url_dict.netloc != netloc: return False
     if not re.match(pattern, url_dict.path): return False
     return True
